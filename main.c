@@ -58,9 +58,12 @@ int main() {
         char last_name[NAME_LEN];
         char phone_number[PHONE_LEN];
         int level, class_number;
+        int grades[NUM_COURSES] = {};
 
-        int tt = sscanf(line, "%s %s %s %d %d", first_name, last_name, phone_number, &level, &class_number);
-        printf("tt %d", tt);
+        sscanf(line, "%s %s %s %d %d %d %d %d %d %d %d %d %d %d %d",
+                    first_name, last_name, phone_number, &level, &class_number,
+                    &grades[0], &grades[1], &grades[2], &grades[3], &grades[4], &grades[5], &grades[6], &grades[7], &grades[8], &grades[9]);
+
 
         // Store information in the student struct
         strncpy(new_student->first_name, first_name, NAME_LEN - 1);
@@ -75,19 +78,10 @@ int main() {
         // Allocate memory for courses
         new_student->courses = malloc(NUM_COURSES * sizeof(struct course));
 
-        // Read grades of the courses for the student
-        for (int i = 0; i < NUM_COURSES; i++) {
-            int grade;
-            //sscanf(line, "%d", &grade);
-            int temp = sscanf(line, "%d", &grade);
-            printf("the temp %d\n",temp);
-            if (temp == 0) {
-         //       printf("Error reading grades for student %s %s\n", first_name, last_name);
-                break;
-            }
-            //printf("%d",grade);
-            new_student->courses[i].grade = grade;
-            new_student->courses[i].available = 1;
+        // Store the grades in the student struct
+        for (int i = 0; i < NUM_COURSES - 10; i++) {
+        new_student->courses[i].grade = grades[i];
+        new_student->courses[i].available = 1;
         }
 
         // Store the new student in the school database
@@ -99,6 +93,7 @@ int main() {
     // Close the file
     fclose(file);
 
+/*
     printf("%d\n",num_students);
     // print the db
     for (int i = 0; i < NUM_LEVELS; i++) {
@@ -117,7 +112,7 @@ int main() {
         }
     }
 
-
+*/
 
     // free the dynamically allocated memory for each student
     for (int i = 0; i < NUM_LEVELS; i++) {

@@ -50,7 +50,6 @@ int main() {
     int num_students = 0;
 
     while (fgets(line, sizeof(line), file) != NULL) {
-        //printf("%s", line);
         // Create a new student instance dynamically
         struct student* new_student = malloc(sizeof(struct student));
 

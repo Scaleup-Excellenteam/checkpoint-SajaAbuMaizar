@@ -93,27 +93,6 @@ int main() {
     // Close the file
     fclose(file);
 
-/*
-    printf("%d\n",num_students);
-    // print the db
-    for (int i = 0; i < NUM_LEVELS; i++) {
-        for (int j = 0; j < NUM_OF_CLASSES; j++) {
-            struct student* current_student = mySchool.DB[i][j];
-            if (current_student != NULL) {
-                printf("Level: %d, Class: %d\n", current_student->level, current_student->class_number);
-                printf("Name: %s %s\n", current_student->first_name, current_student->last_name);
-                printf("Phone Number: %s\n", current_student->phone_number);
-                printf("Courses:\n");
-                for (int k = 0; k < NUM_COURSES; k++) {
-                    printf("%s - Grade: %d\n", current_student->courses[k].name, current_student->courses[k].grade);
-                }
-                printf("------------------------\n");
-            }
-        }
-    }
-
-*/
-
     // free the dynamically allocated memory for each student
     for (int i = 0; i < NUM_LEVELS; i++) {
         for (int j = 0; j < NUM_OF_CLASSES; j++) {

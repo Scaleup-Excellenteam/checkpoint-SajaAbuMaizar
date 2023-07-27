@@ -35,6 +35,7 @@ struct student {
    int level;
    int class_number;
    struct course* courses;
+   struct student* next; // Pointer to the next student in the class
 };
 
 
@@ -53,6 +54,7 @@ void top_students_by_course(const struct school *school);
 void potential_dropouts(const struct school *school);
 void calculate_average_by_class(const struct school *school);
 void export_database(const struct school *school);
+void display_student_courses(const struct course *courses);
 
 
 int main() {
@@ -69,7 +71,7 @@ int main() {
    // Initialize the database to NULL
    for (int i = 0; i < NUM_LEVELS; i++) {
        for (int j = 0; j < NUM_OF_CLASSES; j++) {
-           mySchool.DB[i][j] = NULL;
+           mySchool.DB[i][j] = NULL; // Set the head pointer of each class to NULL
        }
    }
 
@@ -98,9 +100,9 @@ int main() {
 
 
        // Decrypt the data read from the file
-       encrypt_decrypt(first_name, NAME_LEN);
-       encrypt_decrypt(last_name, NAME_LEN);
-       encrypt_decrypt(phone_number, PHONE_LEN);
+       //encrypt_decrypt(first_name, NAME_LEN);
+       //encrypt_decrypt(last_name, NAME_LEN);
+       //encrypt_decrypt(phone_number, PHONE_LEN);
 
 
        // Store information in the student struct
@@ -125,7 +127,8 @@ int main() {
        }
 
 
-       // Store the new student in the school database
+       // Insert the new student into the linked list of the corresponding class
+       new_student->next = mySchool.DB[level - 1][class_number - 1];
        mySchool.DB[level - 1][class_number - 1] = new_student;
 
 
@@ -191,38 +194,125 @@ int main() {
 
 
    // Free the dynamically allocated memory for each student
-   for (int i = 0; i < NUM_LEVELS; i++) {
-       for (int j = 0; j < NUM_OF_CLASSES; j++) {
-           if (mySchool.DB[i][j] != NULL) {
-               free(mySchool.DB[i][j]->courses);
-               free(mySchool.DB[i][j]);
-           }
+for (int i = 0; i < NUM_LEVELS; i++) {
+   for (int j = 0; j < NUM_OF_CLASSES; j++) {
+       struct student *current_student = mySchool.DB[i][j];
+       while (current_student != NULL) {
+           struct student *next_student = current_student->next;
+           free(current_student->courses);
+           free(current_student);
+           current_student = next_student;
        }
    }
-
-
+}
    return 0;
 }
 
 
 
 
+// Function to display all students in the school
 void display_students(const struct school *school) {
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           while (current_student != NULL) {
+               printf("Name: %s %s\n", current_student->first_name, current_student->last_name);
+               printf("Phone: %s\n", current_student->phone_number);
+               printf("Level: %d\n", current_student->level);
+               printf("Class: %d\n", current_student->class_number);
+               printf("Courses:\n");
+               display_student_courses(current_student->courses);
+               printf("----------------------------------------\n");
 
 
+               current_student = current_student->next;
+           }
+       }
+   }
 }
 
 
+// Helper function to display a student's courses
+void display_student_courses(const struct course *courses) {
+   for (int i = 0; i < NUM_COURSES; i++) {
+       if (courses[i].available) {
+           printf("%s: %d\n", courses[i].name, courses[i].grade);
+       }
+   }
+}
+
+
+
+
+// Function to add a new student to the school
 void add_student(struct school *school) {
+   char first_name[NAME_LEN];
+   char last_name[NAME_LEN];
+   char phone_number[PHONE_LEN];
+   int level, class_number;
 
 
+   // Prompt the user for the new student's information
+   printf("Enter first name: ");
+   scanf("%s", first_name);
+   printf("Enter last name: ");
+   scanf("%s", last_name);
+   printf("Enter phone number: ");
+   scanf("%s", phone_number);
+   printf("Enter level: ");
+   scanf("%d", &level);
+   printf("Enter class number: ");
+   scanf("%d", &class_number);
+
+
+   // Create a new student instance dynamically
+   struct student* new_student = malloc(sizeof(struct student));
+
+
+   // Store information in the student struct
+   strncpy(new_student->first_name, first_name, NAME_LEN - 1);
+   new_student->first_name[NAME_LEN - 1] = '\0';
+   strncpy(new_student->last_name, last_name, NAME_LEN - 1);
+   new_student->last_name[NAME_LEN - 1] = '\0';
+   strncpy(new_student->phone_number, phone_number, PHONE_LEN - 1);
+   new_student->phone_number[PHONE_LEN - 1] = '\0';
+   new_student->level = level;
+   new_student->class_number = class_number;
+
+
+   // Allocate memory for courses
+   new_student->courses = malloc(NUM_COURSES * sizeof(struct course));
+
+
+   // Initialize grades and availability for courses
+   for (int i = 0; i < NUM_COURSES; i++) {
+       new_student->courses[i].grade = 0;
+       new_student->courses[i].available = 1;
+   }
+
+
+   // Insert the new student into the linked list of the corresponding class
+   new_student->next = school->DB[level - 1][class_number - 1];
+   school->DB[level - 1][class_number - 1] = new_student;
+
+
+   printf("Student added successfully.\n");
 }
+
+
+
+
 
 
 void delete_student(struct school *school) {
 
 
+
+
 }
+
+
 
 
 void update_student_grade(const struct school *school) {

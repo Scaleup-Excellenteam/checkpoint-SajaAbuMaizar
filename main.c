@@ -305,44 +305,268 @@ void add_student(struct school *school) {
 
 
 
+// Function to delete a student based on their phone number
 void delete_student(struct school *school) {
+   char phone_number[PHONE_LEN];
 
 
+   // Prompt the user for the phone number of the student to delete
+   printf("Enter the phone number of the student to delete: ");
+   scanf("%s", phone_number);
 
 
+   // Traverse the database to find the student with the specified phone number
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student **current_student_ptr = &school->DB[level][class_number];
+           while (*current_student_ptr != NULL) {
+               if (strcmp((*current_student_ptr)->phone_number, phone_number) == 0) {
+                   // Found the student with the specified phone number
+                   struct student *temp = *current_student_ptr;
+                   *current_student_ptr = (*current_student_ptr)->next; // Remove the student from the linked list
+                   free(temp->courses);
+                   free(temp);
+                   printf("Student with phone number %s deleted successfully.\n", phone_number);
+                   return;
+               }
+               current_student_ptr = &(*current_student_ptr)->next;
+           }
+       }
+   }
+
+
+   // If the student is not found, display an error message
+   printf("Student with phone number %s not found.\n", phone_number);
 }
 
 
 
 
+// Function to update student grade based on their phone number
 void update_student_grade(const struct school *school) {
+   char phone_number[PHONE_LEN];
 
 
+   // Prompt the user for the phone number of the student to update
+   printf("Enter the phone number of the student to update: ");
+   scanf("%s", phone_number);
+
+
+   // Traverse the database to find the student with the specified phone number
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           while (current_student != NULL) {
+               if (strcmp(current_student->phone_number, phone_number) == 0) {
+                   // Found the student with the specified phone number
+                   printf("Student found:\n");
+                   printf("Name: %s %s\n", current_student->first_name, current_student->last_name);
+                   printf("Phone: %s\n", current_student->phone_number);
+                   printf("Level: %d\n", current_student->level);
+                   printf("Class: %d\n", current_student->class_number);
+                   printf("Courses:\n");
+                   display_student_courses(current_student->courses);
+
+
+                   // Prompt the user to update the grades for the courses
+                   for (int i = 0; i < NUM_COURSES; i++) {
+                       if (current_student->courses[i].available) {
+                           printf("Enter new grade for %s: ", current_student->courses[i].name);
+                           scanf("%d", &current_student->courses[i].grade);
+                       }
+                   }
+
+
+                   printf("Student grade updated successfully.\n");
+                   return;
+               }
+               current_student = current_student->next;
+           }
+       }
+   }
+
+
+   // If the student is not found, display an error message
+   printf("Student with phone number %s not found.\n", phone_number);
 }
 
 
+
+
+// Function to search for a student based on their phone number
 void search_student(const struct school *school) {
+   char phone_number[PHONE_LEN];
 
 
+   // Prompt the user for the phone number of the student to search for
+   printf("Enter the phone number of the student to search for: ");
+   scanf("%s", phone_number);
+
+
+   // Traverse the database to find the student with the specified phone number
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           while (current_student != NULL) {
+               if (strcmp(current_student->phone_number, phone_number) == 0) {
+                   // Found the student with the specified phone number
+                   printf("Student found:\n");
+                   printf("Name: %s %s\n", current_student->first_name, current_student->last_name);
+                   printf("Phone: %s\n", current_student->phone_number);
+                   printf("Level: %d\n", current_student->level);
+                   printf("Class: %d\n", current_student->class_number);
+                   printf("Courses:\n");
+                   display_student_courses(current_student->courses);
+                   return;
+               }
+               current_student = current_student->next;
+           }
+       }
+   }
+
+
+   // If the student is not found, display an error message
+   printf("Student with phone number %s not found.\n", phone_number);
 }
 
 
+
+
+// Function to find and display the top-performing students by course
 void top_students_by_course(const struct school *school) {
+   // Array to keep track of top-performing students for each course
+   struct student *top_students[NUM_COURSES] = {NULL};
 
 
+   // Traverse the database to find the top-performing students for each course
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           while (current_student != NULL) {
+               // Check each course for the current student
+               for (int i = 0; i < NUM_COURSES; i++) {
+                   // Only consider available courses
+                   if (current_student->courses[i].available) {
+                       // If the current student has a higher grade than the current top student for the course, update the top student
+                       if (top_students[i] == NULL || current_student->courses[i].grade > top_students[i]->courses[i].grade) {
+                           top_students[i] = current_student;
+                       }
+                   }
+               }
+               current_student = current_student->next;
+           }
+       }
+   }
+
+
+   // Display the information of top-performing students for each course
+   for (int i = 0; i < NUM_COURSES; i++) {
+       if (top_students[i] != NULL) {
+           printf("Top student for course %s:\n", top_students[i]->courses[i].name);
+           printf("Name: %s %s\n", top_students[i]->first_name, top_students[i]->last_name);
+           printf("Phone: %s\n", top_students[i]->phone_number);
+           printf("Level: %d\n", top_students[i]->level);
+           printf("Class: %d\n", top_students[i]->class_number);
+           printf("Grade: %d\n", top_students[i]->courses[i].grade);
+           printf("----------------------------------------\n");
+       } else {
+           printf("No top student found for course %s.\n", top_students[i]->courses[i].name);
+       }
+   }
 }
+
+
 
 
 void potential_dropouts(const struct school *school) {
+   int num_failing_courses_threshold = 3; // Adjust this threshold as needed
 
 
+   printf("Potential Dropouts:\n");
+
+
+   // Traverse the database to find potential dropouts
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           while (current_student != NULL) {
+               int num_failing_courses = 0;
+              
+               // Check each course for the current student
+               for (int i = 0; i < NUM_COURSES; i++) {
+                   // Only consider available courses
+                   if (current_student->courses[i].available) {
+                       // If the student has a failing grade (0-49) in the course, increment the count
+                       if (current_student->courses[i].grade >= 0 && current_student->courses[i].grade < 50) {
+                           num_failing_courses++;
+                       }
+                   }
+               }
+
+
+               // If the number of failing courses exceeds the threshold, consider the student a potential dropout
+               if (num_failing_courses >= num_failing_courses_threshold) {
+                   printf("Name: %s %s\n", current_student->first_name, current_student->last_name);
+                   printf("Phone: %s\n", current_student->phone_number);
+                   printf("Level: %d\n", current_student->level);
+                   printf("Class: %d\n", current_student->class_number);
+                   printf("Number of Failing Courses: %d\n", num_failing_courses);
+                   printf("----------------------------------------\n");
+               }
+
+
+               current_student = current_student->next;
+           }
+       }
+   }
 }
 
 
+
+
+// Function to calculate the average grade for each class in each level
 void calculate_average_by_class(const struct school *school) {
+   printf("Average Grade by Class:\n");
 
 
+   // Traverse the database to calculate the average grade for each class
+   for (int level = 0; level < NUM_LEVELS; level++) {
+       for (int class_number = 0; class_number < NUM_OF_CLASSES; class_number++) {
+           struct student *current_student = school->DB[level][class_number];
+           int total_grades = 0;
+           int num_students = 0;
+
+
+           while (current_student != NULL) {
+               // Calculate the total grade for the current student
+               int student_total_grade = 0;
+               for (int i = 0; i < NUM_COURSES; i++) {
+                   if (current_student->courses[i].available) {
+                       student_total_grade += current_student->courses[i].grade;
+                   }
+               }
+
+
+               // Increment the total grades and number of students
+               total_grades += student_total_grade;
+               num_students++;
+
+
+               current_student = current_student->next;
+           }
+
+
+           // Calculate the average grade for the class (rounded to the nearest integer)
+           int class_average = (num_students > 0) ? (total_grades / num_students) : 0;
+
+
+           // Display the result
+           printf("Level %d, Class %d: Average Grade = %d\n", level + 1, class_number + 1, class_average);
+       }
+   }
 }
+
+
 
 
 void export_database(const struct school *school) {

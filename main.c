@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/evp.h>
 
 
 #define NUM_COURSES  20
@@ -10,15 +11,6 @@
 #define PHONE_LEN  11
 #define NUM_OF_CLASSES  10
 #define LINE_LEN  200
-
-
-// Simple XOR-based encryption/decryption function
-void encrypt_decrypt(char *data, int data_len) {
-   const char key = 'K'; // Secret key
-   for (int i = 0; i < data_len; i++) {
-       data[i] ^= key;
-   }
-}
 
 
 struct course {
@@ -55,6 +47,14 @@ void potential_dropouts(const struct school *school);
 void calculate_average_by_class(const struct school *school);
 void export_database(const struct school *school);
 void display_student_courses(const struct course *courses);
+
+
+// Function prototypes for encryption and decryption
+void encrypt_data(const unsigned char *plaintext, int plaintext_len, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext);
+void decrypt_data(const unsigned char *ciphertext, int ciphertext_len, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext);
+void generate_random_key_and_iv(unsigned char *key, unsigned char *iv);
+
+
 
 
 int main() {
@@ -99,10 +99,6 @@ int main() {
               &grades[0], &grades[1], &grades[2], &grades[3], &grades[4], &grades[5], &grades[6], &grades[7], &grades[8], &grades[9]);
 
 
-       // Decrypt the data read from the file
-       //encrypt_decrypt(first_name, NAME_LEN);
-       //encrypt_decrypt(last_name, NAME_LEN);
-       //encrypt_decrypt(phone_number, PHONE_LEN);
 
 
        // Store information in the student struct
@@ -569,7 +565,134 @@ void calculate_average_by_class(const struct school *school) {
 
 
 
+
+
+// Function to export the encrypted database to a file
 void export_database(const struct school *school) {
+   FILE *file = fopen("./database.dat", "wb");
+   if (file == NULL) {
+       printf("Error creating/opening the file.\n");
+       return;
+   }
 
 
+   // Generate a random key and IV for encryption
+   unsigned char key[32];
+   unsigned char iv[16];
+   generate_random_key_and_iv(key, iv);
+
+
+   // Write the key and IV to the file
+   fwrite(key, sizeof(unsigned char), 32, file);
+   fwrite(iv, sizeof(unsigned char), 16, file);
+
+
+   // Iterate through the database, encrypt each student, and save to the file
+   for (int i = 0; i < NUM_LEVELS; i++) {
+       for (int j = 0; j < NUM_OF_CLASSES; j++) {
+           struct student *current_student = school->DB[i][j];
+           while (current_student != NULL) {
+               // Serialize the student data into a plaintext buffer
+               unsigned char plaintext_buffer[LINE_LEN];
+               snprintf(plaintext_buffer, LINE_LEN, "%s %s %s %d %d %d %d %d %d %d %d %d %d %d %d\n",
+                        current_student->first_name, current_student->last_name, current_student->phone_number,
+                        current_student->level, current_student->class_number,
+                        current_student->courses[0].grade, current_student->courses[1].grade, current_student->courses[2].grade,
+                        current_student->courses[3].grade, current_student->courses[4].grade, current_student->courses[5].grade,
+                        current_student->courses[6].grade, current_student->courses[7].grade, current_student->courses[8].grade,
+                        current_student->courses[9].grade);
+
+
+               // Encrypt the plaintext buffer
+               unsigned char ciphertext_buffer[LINE_LEN];
+               int ciphertext_len;
+               encrypt_data(plaintext_buffer, strlen(plaintext_buffer), key, iv, ciphertext_buffer);
+
+
+               // Calculate the ciphertext length after encryption
+               ciphertext_len = strlen(plaintext_buffer);
+
+
+               // Write the encrypted data to the file
+               fwrite(ciphertext_buffer, sizeof(unsigned char), ciphertext_len, file);
+
+
+               current_student = current_student->next;
+           }
+       }
+   }
+
+
+   fclose(file);
+}
+
+
+
+
+// Helper function to generate a random 256-bit key and IV for AES encryption
+void generate_random_key_and_iv(unsigned char *key, unsigned char *iv) {
+
+
+   // 256-bit key (32 bytes)
+   const unsigned char fixed_key[] = "abcdefghijklmnopqrstuvwxzy123456";
+   memcpy(key, fixed_key, 32);
+
+
+   // 128-bit IV (16 bytes)
+   const unsigned char fixed_iv[] = "0123456789abcdef";
+   memcpy(iv, fixed_iv, 16);
+}
+
+
+// Encryption function using AES-256 in CBC mode
+void encrypt_data(const unsigned char *plaintext, int plaintext_len, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext) {
+   EVP_CIPHER_CTX *ctx;
+   int len;
+   int ciphertext_len;
+
+
+   // Create and initialize the context for encryption
+   ctx = EVP_CIPHER_CTX_new();
+   EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
+
+
+   // Encrypt the plaintext
+   EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len);
+   ciphertext_len = len;
+
+
+   // Finalize the encryption (if needed)
+   EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
+   ciphertext_len += len;
+
+
+   // Clean up
+   EVP_CIPHER_CTX_free(ctx);
+}
+
+
+// Decryption function using AES-256 in CBC mode
+void decrypt_data(const unsigned char *ciphertext, int ciphertext_len, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext) {
+   EVP_CIPHER_CTX *ctx;
+   int len;
+   int plaintext_len;
+
+
+   // Create and initialize the context for decryption
+   ctx = EVP_CIPHER_CTX_new();
+   EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
+
+
+   // Decrypt the ciphertext
+   EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len);
+   plaintext_len = len;
+
+
+   // Finalize the decryption (if needed)
+   EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
+   plaintext_len += len;
+
+
+   // Clean up
+   EVP_CIPHER_CTX_free(ctx);
 }
